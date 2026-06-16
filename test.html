@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+      * { box-sizing: border-box; }
+    body { font-family: Arial; max-width: 500px; margin: auto; padding: 10px; }
+    input, select, button { width: 100%; padding: 8px; margin: 6px 0; }
+    .hidden { display: none !important; }
+    .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; overflow: hidden; }
+    .input-error {border: 2px solid red !important; }
+
+      /* ✅ ADD THIS (Safari fix) */
+    #formPage {
+      display: flex;
+      flex-direction: column;
+    }
+  
+    #formPage label {
+      display: block;
+      margin-top: 10px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+
+    .modal {
+    display: none; 
+    position: fixed;
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%; 
+    background-color: rgba(0,0,0,0.4); 
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 15% auto; 
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================= FORM ================= -->
+<div id="formPage" class="card">
+  <h2>The Picklers Camp Cebu - Booking Form</h2>
+
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="email" id="confirmEmail" placeholder="Confirm Email" required>
+  <input type="text" id="name" placeholder="Name" required>
+  <input type="text" id="contact" placeholder="Contact Number" required>
+  <input type="text" id="address" placeholder="Address (optional)">
+
+  <label for="court">Court</label>
+  <select id="court" onchange="computeTotal(); updateBreakdownButton();">
+    <option value="">Select Court</option>
+    <option value="Court 1">Court 1</option>
+    <option value="Court 2">Court 2</option>
+    <option value="Court 1 and Court 2">Court 1 and Court 2</option>
+  </select>
+
+  <label for="date">Date</label>
+  <input type="date" id="date" required onchange="updateTimeInOptions()">
+
+  <label for="timeIn">Time-in</label>
+  <select id="timeIn" onchange="updateDuration(); computeTotal(); updateBreakdownButton();"></select>
+
+  <label for="duration">Duration of stay</label>
+  <select id="duration" onchange="computeTotal(); updateBreakdownButton();"></select>
+
+  <button type="button" onclick="checkAvailability(event)" 
+    style="background:#f44336; color:white; border:none; border-radius:5px;">
+    Check Court Availability
+  </button>
+
+  <div>
+    <strong>Total: ₱<span id="total">0</span></strong>
+  
+    <button type="button" id="breakdownBtn" onclick="showBreakdownModal()" disabled
+      style="margin-top:10px; background:#40b55c; color:white; border:none; border-radius:5px; padding:6px 10px;">
+      Price Breakdown
+    </button>
+  </div>
+
+  <button type="button" id="paymentBtn" onclick="goToSummary()">Proceed to Payment</button>
+</div>
+
+<!-- ================= SUMMARY ================= -->
+<div id="summaryPage" class="hidden card">
+
+  <h2>Booking Summary</h2>
+
+  <div style="display:flex; gap:20px; flex-wrap:wrap;">
+
+    <!-- LEFT SIDE: DETAILS -->
+    <div style="flex:1; min-width:250px;">
+
+      <div id="summaryText"></div>
+
+    </div>
+
+    <!-- RIGHT SIDE: QR -->
+    <div style="flex:1; text-align:center; min-width:200px;">
+      <h3 style="color:#40b55c;">Scan to Pay</h3>
+      
+      <img src="https://lh3.googleusercontent.com/d/1d7G0FKSH4ZXM7KvEWnoPL1hu8U_HbH_p" 
+           style="width:200px; border-radius:8px; border:1px solid #ccc;">
+      
+      <p style="font-size:12px; color:#666;">
+        Scan the QR code and enter the exact amount shown in your booking summary.
+      </p>
+
+      <div style="margin-top:10px; font-size:14px;">
+        <strong>GCash Number:</strong> 0967 061 6311<br>
+        <strong>Amount:</strong> ₱<span id="summaryAmount"></span>
+      </div>
+      
+    </div>
+
+    <div style="flex:1; min-width:250px;">
+
+      <h3>Upload Proof of Payment</h3>
+      <input type="file" id="proof" accept="image/*">
+      
+    </div>
+
+  </div>
+
+  <!-- ACTION BUTTONS -->
+  <div style="display:flex; gap:10px; margin-top:20px;">
+    <button onclick="editBooking()" 
+      style="flex:1; background:#ccc; border:none; border-radius:5px;">
+      Edit Booking
+    </button>
+
+    <button type="button" id="submitBtn" onclick="submitBooking(event)" 
+      style="flex:1; background:#40b55c; color:white; border:none; border-radius:5px;">
+      Submit Booking
+    </button>
+  </div>
+
+</div>
+
+<!-- PRICE BREAKDOWN MODAL -->
+<div id="breakdownModal" class="modal">
+  <div class="modal-content">
+    <h3 style="color:#40b55c;">Price Breakdown</h3>
+    <div id="breakdownContent" style="text-align:left; margin-top:10px;"></div>
+    <button onclick="closeBreakdownModal()">Close</button>
+  </div>
+</div>
+
+<div id="availabilityModal" class="modal">
+  <div class="modal-content">
+    <h3 id="availabilityTitle" style="color:#40b55c;"></h3>
+    <p id="availabilityMessage"></p>
+    <button onclick="closeAvailabilityModal()">Close</button>
+  </div>
+</div>
+
+
+<script>
+  // CHANGE WebAppUrl DURING TESTING. REVERT BACK WHEN RELEASING TO PROD. PROD LINK : https://script.google.com/macros/s/AKfycby7u5V0psYXDZ4-bMLKmVJm7l4vG4cgBFgFjjqR5ymJ5PFsH2Vzk9LvdLtFYJ31fVLkMA/exec
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbwWrr0zru5dGX7eDuYfaYOYmL6Wx6yHBmx-MegRd-YUGMk4nBLGv6kj5cCTUueJzcbnuQ/exec"; // CHANGE THIS WHEN TESTING
+  const openingHour = 7;
+  const closingHour = 24;
+
+  function isValidEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  }
+  
+
+  function formatTime(h) {
+    let suffix = h >= 12 ? "PM" : "AM";
+    let hour = h % 12 || 12;
+    return hour + ":00 " + suffix;
+  }
+
+
+  // Update duration dynamically
+  function updateDuration() {
+    let timeInValue = document.getElementById("timeIn").value;
+    document.getElementById("duration").disabled = false;
+
+    if (!timeInValue) {
+      document.getElementById("duration").innerHTML = "";
+      return;
+    }
+
+    let timeIn = parseInt(timeInValue);
+    let max = closingHour - timeIn;
+
+    let duration = document.getElementById("duration");
+    duration.innerHTML = "";
+
+    // ✅ ADD THIS FIRST
+    let placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.text = "Select Duration";
+    duration.add(placeholder);
+
+    for (let i = 1; i <= max; i++) {
+      let opt = document.createElement("option");
+      opt.value = i;
+      opt.text = i + " hour(s)";
+      duration.add(opt);
+    }
+
+    computeTotal();
+    updateBreakdownButton();
+  }
+
+  // Compute total
+  function computeTotal() {
+    let court = document.getElementById("court").value;
+    let timeIn = parseInt(document.getElementById("timeIn").value);
+    let duration = parseInt(document.getElementById("duration").value) || 0;
+
+    if (!court || isNaN(timeIn) || !duration) {
+      document.getElementById("total").innerText = 0;
+      return;
+    }
+
+    let total = 0;
+
+    for (let i = 0; i < duration; i++) {
+      let hour = timeIn + i;
+      total += getRate(hour);
+    }
+
+    total *= getCourtMultiplier();
+    document.getElementById("total").innerText = total;
+  }
+
+  
+  function getCourtMultiplier() {
+    const court = document.getElementById("court").value;
+  
+    return court === "Court 1 and Court 2" ? 2 : 1;
+  }
+
+  // Go to summary
+  function goToSummary() {
+    const data = getFormData();
+
+    const btn = document.getElementById("paymentBtn");
+    btn.disabled = true;
+    btn.innerText = "Proceeding to Payment...";
+
+    if (!data.email) {
+      alert("Please input your email.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+    
+    if (!isValidEmail(data.email)) {
+      alert("Please enter a valid email address.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+
+    if (data.email !== document.getElementById("confirmEmail").value.trim()) {
+      alert("Emails do not match.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+
+    if (!data.name) {
+      alert("Please input your name.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+
+    if (!data.contact) {
+      alert("Please input your contact number.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+
+    if (!data.court) {
+      alert("Please select court.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+
+    if (!data.date) {
+      alert("Please select your preferred date.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+
+    if (!data.timeIn || !data.duration) {
+      alert("Please select time-in and duration of stay.");
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+      return;
+    }
+
+    const today = new Date();
+    const selected = new Date(data.date);
+    
+    today.setHours(0,0,0,0);
+    selected.setHours(0,0,0,0);
+    
+    if (selected < today) {
+      alert("You cannot select a past date.");
+      return;
+    }
+
+    let timeOutFormatted = calculateTimeOut(data.timeIn, data.duration);
+
+    document.getElementById("summaryText").innerHTML = `
+    <div><strong>Name:</strong> ${data.name}</div>
+    <div><strong>Court:</strong> ${data.court}</div>
+    <div><strong>Date:</strong> ${data.date}</div>
+    <div><strong>Time-in:</strong> ${formatTime(data.timeIn)} - ${timeOutFormatted}</div>
+    <div><strong>Duration:</strong> ${data.duration} hour(s)</div>
+    <div><strong>Total:</strong> ₱${calculateSummaryTotal(data)}</div>
+    `;
+
+    fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "checkConflict",
+        ...data
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.conflict) {
+        alert('WARNING! Conflict is detected in your selected court, date, and time. Please check the site calendar or click "Check Court Availability" button and try again.');
+        return;
+      }
+    
+      document.getElementById("formPage").classList.add("hidden");
+      document.getElementById("summaryPage").classList.remove("hidden");
+    })
+    .catch(err => {
+      alert("Error: " + err.message);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+    });
+
+    document.getElementById("summaryAmount").innerText = calculateSummaryTotal(data);
+  }
+
+  // Collect form data
+  function getFormData() {
+    let court = document.getElementById("court").value;
+    let duration = parseInt(document.getElementById("duration").value) || 0;
+
+    return {
+      email: document.getElementById("email").value.trim(),
+      name: document.getElementById("name").value,
+      contact: document.getElementById("contact").value,
+      address: document.getElementById("address").value,
+      court: court,
+      date: document.getElementById("date").value,
+      timeIn: parseInt(document.getElementById("timeIn").value),
+      duration: duration,
+      total: 0
+    };
+  }
+
+  // Submit booking
+  function submitBooking(event) {
+    const btn = document.getElementById("submitBtn");
+
+    let data = getFormData();
+    let file = document.getElementById("proof").files[0];
+
+    if (!file) {
+      alert("Please upload proof of payment.");
+      return;
+    }
+      
+    btn.disabled = true;
+    btn.innerText = "Submitting...";
+
+    // (optional) force UI repaint before heavy work starts
+    setTimeout(() => {
+
+      let reader = new FileReader();
+
+      reader.onload = function(e) {
+        data.file = e.target.result;
+        data.fileName = file.name;
+
+        fetch(webAppUrl, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "submitBooking",
+            ...data
+          })
+        })
+        .then(res => res.json())
+        .then(res => {
+          if (res.error) {
+            alert(res.error);
+            btn.disabled = false;
+            btn.innerText = "Submit Booking";
+            return;
+          }
+        
+          showSuccessPage();
+        })
+        .catch(err => {
+          alert("Error submitting booking");
+          btn.disabled = false;
+          btn.innerText = "Submit Booking";
+        });
+      };
+
+      reader.readAsDataURL(file);
+
+    }, 10);
+  }
+
+  // ✅ SUCCESS PAGE
+  function showSuccessPage() {
+    document.body.innerHTML = `
+      <div style="font-family: Arial; max-width:500px; margin:auto; text-align:center; padding:20px;">
+        
+        <h2 style="color:#40b55c;">Booking Submitted! ✅</h2>
+        
+        <p>Your booking has been successfully submitted.</p>
+        <p>Please wait for confirmation via email.</p>
+
+        <div style="margin-top:20px;">
+          <button onclick="createAnother(event)" 
+            style="width:100%; padding:10px; margin-bottom:10px; background:#40b55c; color:white; border:none; border-radius:5px;">
+            Create Another Booking
+          </button>
+
+          <button onclick="closePage()" 
+            style="width:100%; padding:10px; background:#ccc; border:none; border-radius:5px;">
+            Close
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ✅ BUTTON ACTIONS
+  function createAnother(event) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "Redirecting...";
+    // CHANGE window.location.href link DURING TESTING!!!!
+    window.location.href = "https://thepicklerscampcebu-source.github.io/pickleball-booking/test.html"; // CHANGE window.location.href link DURING TESTING!!!!
+  }
+
+  function closePage() {
+    window.close();
+    alert("You may now close this tab.");
+  }
+
+  // Init
+  window.onload = function () {
+    setMinDate();
+    updateTimeInOptions();
+    updateBreakdownButton();
+  
+    const emailInput = document.getElementById("email");
+    const confirmEmailInput = document.getElementById("confirmEmail");
+  
+    // EMAIL FORMAT VALIDATION
+    emailInput.addEventListener("input", function () {
+      const email = this.value.trim();
+  
+      if (email && !isValidEmail(email)) {
+        this.classList.add("input-error");
+      } else {
+        this.classList.remove("input-error");
+      }
+  
+      validateEmailMatch();
+    });
+  
+    // CONFIRM EMAIL MATCH VALIDATION
+    confirmEmailInput.addEventListener("input", validateEmailMatch);
+  
+    function validateEmailMatch() {
+      const email = emailInput.value.trim();
+      const confirmEmail = confirmEmailInput.value.trim();
+  
+      if (confirmEmail && email !== confirmEmail) {
+        confirmEmailInput.classList.add("input-error");
+      } else {
+        confirmEmailInput.classList.remove("input-error");
+      }
+    }
+  };
+
+  function setMinDate() {
+    const dateInput = document.getElementById("date");
+
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+
+    const minDate = `${yyyy}-${mm}-${dd}`;
+    dateInput.min = minDate;
+  }
+
+
+  function updateTimeInOptions() {
+    const timeSelect = document.getElementById("timeIn");
+    const durationSelect = document.getElementById("duration");
+    const selectedDate = document.getElementById("date").value;
+  
+    const now = new Date();
+    const currentHour = now.getHours();
+  
+    const today = new Date();
+    const todayStr = today.getFullYear() + "-" +
+      String(today.getMonth() + 1).padStart(2, "0") + "-" +
+      String(today.getDate()).padStart(2, "0");
+  
+    // Reset
+    timeSelect.innerHTML = "";
+    durationSelect.innerHTML = "";
+    durationSelect.disabled = true;
+  
+    // Placeholder
+    let placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.text = "Select Time-in";
+    timeSelect.add(placeholder);
+  
+    // Populate
+    for (let h = openingHour; h <= 23; h++) {
+  
+      if (selectedDate === todayStr && h <= currentHour) continue;
+  
+      let opt = document.createElement("option");
+      opt.value = h;
+      opt.text = formatTime(h);
+      timeSelect.add(opt);
+    }
+  
+    // No slots
+    if (timeSelect.options.length === 1) {
+      let opt = document.createElement("option");
+      opt.text = "No available time slots";
+      opt.value = "";
+      timeSelect.add(opt);
+    }
+  
+    updateBreakdownButton();
+  }
+
+
+  function calculateSummaryTotal(data) {
+    let timeIn = parseInt(data.timeIn);
+    let duration = parseInt(data.duration);
+
+    let total = 0;
+
+    for (let i = 0; i < duration; i++) {
+      let hour = timeIn + i;
+      total += getRate(hour);
+    }
+
+    total *= (data.court === "Court 1 and Court 2") ? 2 : 1;
+    return total;
+  }
+
+
+  function isWeekend(dateString) {
+    const date = new Date(dateString);
+    const day = date.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+    return day === 0 || day == 5 || day === 6;
+  }
+
+
+  function getRate(hour) {
+    const selectedDate = document.getElementById("date").value;
+  
+    if (!selectedDate) return 0; // prevent wrong pricing
+  
+    const weekend = isWeekend(selectedDate);
+  
+    if (weekend) {
+      return hour < 16 ? 350 : 390;
+    }
+  
+    return hour < 16 ? 320 : 370;
+  }
+  
+
+  function generateBreakdown() {
+    const court = document.getElementById("court").value;
+    const timeIn = parseInt(document.getElementById("timeIn").value);
+    const duration = parseInt(document.getElementById("duration").value);
+    const selectedDate = document.getElementById("date").value;
+  
+    if (!court || isNaN(timeIn) || isNaN(duration) || !selectedDate) {
+      return "Please select court, date, time, and duration.";
+    }
+  
+    const weekend = isWeekend(selectedDate);
+  
+    let header = weekend
+      ? `<div style="margin-bottom:10px; color:#40b55c;">
+           <strong>Your selected date is a WEEKEND.<br>Weekend rates will apply.</strong>
+         </div>`
+      : `<div style="margin-bottom:10px; color:#40b55c;">
+           <strong>Your selected date is a WEEKDAY.<br>Weekday rates will apply.</strong>
+         </div>`;
+  
+    let breakdownHTML = header;
+    let total = 0;
+  
+    const bothCourts = court === "Court 1 and Court 2";
+  
+    for (let i = 0; i < duration; i++) {
+  
+      let hourStart = timeIn + i;
+  
+      let rate = getRate(hourStart);
+  
+      let amount;
+  
+      if (bothCourts) {
+        amount = rate * 2;
+  
+        breakdownHTML += `
+          ${formatTime(hourStart)} - ${calculateTimeOut(hourStart,1)}
+          : ₱${rate} × 2 courts = ₱${amount}<br>
+        `;
+      } else {
+        amount = rate;
+  
+        breakdownHTML += `
+          ${formatTime(hourStart)} - ${calculateTimeOut(hourStart,1)}
+          : ₱${amount}<br>
+        `;
+      }
+  
+      total += amount;
+    }
+  
+    breakdownHTML += `<hr><strong>Total: ₱${total}</strong>`;
+  
+    return breakdownHTML;
+  }
+
+
+  function showBreakdownModal() {
+    const content = generateBreakdown();
+
+    document.getElementById("breakdownContent").innerHTML = content;
+    document.getElementById("breakdownModal").style.display = "block";
+  }
+
+  function closeBreakdownModal() {
+    document.getElementById("breakdownModal").style.display = "none";
+  }
+
+  // Close when clicking outside
+  window.onclick = function(event) {
+    const modal = document.getElementById("breakdownModal");
+    if (event.target === modal) {
+      modal.style.display = "none";
+    }
+
+    const availabilityModal = document.getElementById("availabilityModal");
+    if (event.target === availabilityModal) {
+      availabilityModal.style.display = "none";
+    }
+  };
+
+
+  function updateBreakdownButton() {
+    const court = document.getElementById("court").value;
+    const timeIn = document.getElementById("timeIn").value;
+    const duration = document.getElementById("duration").value;
+
+    const btn = document.getElementById("breakdownBtn");
+
+    if (court && timeIn && duration) {
+      btn.disabled = false;
+      btn.style.opacity = "1";
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+    }
+  }
+
+
+  function editBooking() {
+    document.getElementById("summaryPage").classList.add("hidden");
+    document.getElementById("formPage").classList.remove("hidden");
+  }
+
+
+
+  function checkAvailability(event) {
+    const data = getFormData();
+
+    if (!data.court || !data.date || !data.timeIn || !data.duration) {
+      alert("Please complete court, date, time, and duration first.");
+      return;
+    }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "Checking...";
+
+    fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "checkConflict",
+        ...data
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+      showAvailabilityResult(res, data.court);
+
+      // ✅ restore button
+      btn.disabled = false;
+      btn.innerText = "Check Court Availability";
+    })
+    .catch(err => {
+      alert("Error: " + err.message);
+
+      btn.disabled = false;
+      btn.innerText = "Check Court Availability";
+    });
+  }
+
+
+  function showAvailabilityResult(res, court) {
+    const title = document.getElementById("availabilityTitle");
+    const msg = document.getElementById("availabilityMessage");
+
+    if (res.conflict) {
+      title.innerText = "Not Available ❌";
+          msg.innerText =
+      "The following court(s) are already occupied during your selected schedule:\n\n" +
+      res.occupiedCourts.join(", ") +
+      ".\n\nPlease select another court or another time.";
+      
+    } else {
+      title.innerText = "Available ✅";
+      msg.innerText = `${court} is/are AVAILABLE for your selected date and time!`;
+    }
+
+    document.getElementById("availabilityModal").style.display = "block";
+  }
+
+
+  function closeAvailabilityModal() {
+    document.getElementById("availabilityModal").style.display = "none";
+  }
+
+
+  function calculateTimeOut(timeInHour, hoursToAdd) {
+    // Convert numeric hour (0–23) to Date
+    let date = new Date(2000, 0, 1, timeInHour, 0);
+
+    date.setHours(date.getHours() + Number(hoursToAdd));
+
+    let outHours = date.getHours();
+    let outMinutes = date.getMinutes();
+    let outAmpm = outHours >= 12 ? "PM" : "AM";
+
+    outHours = outHours % 12;
+    if (outHours === 0) outHours = 12;
+
+    return outHours + ":" + ("0" + outMinutes).slice(-2) + " " + outAmpm;
+  }
+
+</script>
+
+</body>
+</html>
