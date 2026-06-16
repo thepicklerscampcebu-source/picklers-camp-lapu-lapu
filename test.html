@@ -49,7 +49,7 @@
 
 <!-- ================= FORM ================= -->
 <div id="formPage" class="card">
-  <h2>The Picklers Camp Cebu - Booking Form</h2>
+  <h2>The Picklers Camp Lapu-Lapu - Booking Form</h2>
 
   <input type="email" id="email" placeholder="Email" required>
   <input type="email" id="confirmEmail" placeholder="Confirm Email" required>
@@ -62,7 +62,11 @@
     <option value="">Select Court</option>
     <option value="Court 1">Court 1</option>
     <option value="Court 2">Court 2</option>
+    <option value="Court 3">Court 3</option>
     <option value="Court 1 and Court 2">Court 1 and Court 2</option>
+    <option value="Court 2 and Court 3">Court 2 and Court 3</option>
+    <option value="Court 1 and Court 3">Court 1 and Court 3</option>
+    <option value="Court 1, Court 2, and Court 3">Court 1, Court 2, and Court 3</option>
   </select>
 
   <label for="date">Date</label>
@@ -168,8 +172,7 @@
 <script>
   // CHANGE WebAppUrl DURING TESTING. REVERT BACK WHEN RELEASING TO PROD. PROD LINK : https://script.google.com/macros/s/AKfycby7u5V0psYXDZ4-bMLKmVJm7l4vG4cgBFgFjjqR5ymJ5PFsH2Vzk9LvdLtFYJ31fVLkMA/exec
   const webAppUrl = "https://script.google.com/macros/s/AKfycbwWrr0zru5dGX7eDuYfaYOYmL6Wx6yHBmx-MegRd-YUGMk4nBLGv6kj5cCTUueJzcbnuQ/exec"; // CHANGE THIS WHEN TESTING
-  const openingHour = 7;
-  const closingHour = 24;
+  const operatingHours = [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1];
 
   function isValidEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -178,8 +181,12 @@
   
 
   function formatTime(h) {
+  
+    h = h % 24;
+  
     let suffix = h >= 12 ? "PM" : "AM";
     let hour = h % 12 || 12;
+  
     return hour + ":00 " + suffix;
   }
 
@@ -195,7 +202,13 @@
     }
 
     let timeIn = parseInt(timeInValue);
-    let max = closingHour - timeIn;
+    
+    let max;
+    if (timeIn >= 7) {
+      max = 26 - timeIn;
+    } else {
+      max = 2 - timeIn;
+    }
 
     let duration = document.getElementById("duration");
     duration.innerHTML = "";
@@ -231,7 +244,7 @@
     let total = 0;
 
     for (let i = 0; i < duration; i++) {
-      let hour = timeIn + i;
+      let hour = (timeIn + i) % 24;
       total += getRate(hour);
     }
 
@@ -243,7 +256,23 @@
   function getCourtMultiplier() {
     const court = document.getElementById("court").value;
   
-    return court === "Court 1 and Court 2" ? 2 : 1;
+    switch (court) {
+      case "Court 1":
+      case "Court 2":
+      case "Court 3":
+        return 1;
+  
+      case "Court 1 and Court 2":
+      case "Court 2 and Court 3":
+      case "Court 1 and Court 3":
+        return 2;
+  
+      case "Court 1, Court 2, and Court 3":
+        return 3;
+  
+      default:
+        return 1;
+    }
   }
 
   // Go to summary
@@ -463,7 +492,7 @@
     btn.disabled = true;
     btn.innerText = "Redirecting...";
     // CHANGE window.location.href link DURING TESTING!!!!
-    window.location.href = "https://thepicklerscampcebu-source.github.io/pickleball-booking/test.html"; // CHANGE window.location.href link DURING TESTING!!!!
+    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu/test.html"; // CHANGE window.location.href link DURING TESTING!!!!
   }
 
   function closePage() {
@@ -522,6 +551,7 @@
 
 
   function updateTimeInOptions() {
+  
     const timeSelect = document.getElementById("timeIn");
     const durationSelect = document.getElementById("duration");
     const selectedDate = document.getElementById("date").value;
@@ -530,41 +560,59 @@
     const currentHour = now.getHours();
   
     const today = new Date();
-    const todayStr = today.getFullYear() + "-" +
+    const todayStr =
+      today.getFullYear() + "-" +
       String(today.getMonth() + 1).padStart(2, "0") + "-" +
       String(today.getDate()).padStart(2, "0");
   
-    // Reset
     timeSelect.innerHTML = "";
     durationSelect.innerHTML = "";
     durationSelect.disabled = true;
   
-    // Placeholder
     let placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.text = "Select Time-in";
     timeSelect.add(placeholder);
   
-    // Populate
-    for (let h = openingHour; h <= 23; h++) {
+    // operating hours
+    const hours = [
+      7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1
+    ];
   
-      if (selectedDate === todayStr && h <= currentHour) continue;
+    hours.forEach(h => {
+  
+      if (selectedDate === todayStr) {
+  
+        if (
+          (currentHour >= 7 && h <= currentHour) ||
+          (currentHour < 2 && (h <= currentHour || h >= 7))
+        ) {
+          return;
+        }
+  
+      }
   
       let opt = document.createElement("option");
       opt.value = h;
       opt.text = formatTime(h);
-      timeSelect.add(opt);
-    }
   
-    // No slots
+      timeSelect.add(opt);
+  
+    });
+  
     if (timeSelect.options.length === 1) {
+  
       let opt = document.createElement("option");
+  
       opt.text = "No available time slots";
       opt.value = "";
+  
       timeSelect.add(opt);
+  
     }
   
     updateBreakdownButton();
+  
   }
 
 
@@ -575,11 +623,11 @@
     let total = 0;
 
     for (let i = 0; i < duration; i++) {
-      let hour = timeIn + i;
+      let hour = (timeIn + i) % 24;
       total += getRate(hour);
     }
 
-    total *= (data.court === "Court 1 and Court 2") ? 2 : 1;
+    total *= getCourtMultiplier();
     return total;
   }
 
@@ -594,15 +642,18 @@
   function getRate(hour) {
     const selectedDate = document.getElementById("date").value;
   
-    if (!selectedDate) return 0; // prevent wrong pricing
+    if (!selectedDate) return 0;
   
     const weekend = isWeekend(selectedDate);
   
+    // High rate applies from 3 PM (15) until 2 AM (2)
+    const highRate = (hour >= 15 || hour <= 2);
+  
     if (weekend) {
-      return hour < 16 ? 350 : 390;
+      return highRate ? 490 : 470;
     }
   
-    return hour < 16 ? 320 : 370;
+    return highRate ? 450 : 400;
   }
   
 
@@ -629,22 +680,22 @@
     let breakdownHTML = header;
     let total = 0;
   
-    const bothCourts = court === "Court 1 and Court 2";
+    const multiplier = getCourtMultiplier();
   
     for (let i = 0; i < duration; i++) {
   
-      let hourStart = timeIn + i;
+      let hourStart = (timeIn + i) % 24;
   
       let rate = getRate(hourStart);
   
       let amount;
   
-      if (bothCourts) {
-        amount = rate * 2;
+      if (multiplier > 1) {
+        amount = rate * multiplier;
   
         breakdownHTML += `
           ${formatTime(hourStart)} - ${calculateTimeOut(hourStart,1)}
-          : ₱${rate} × 2 courts = ₱${amount}<br>
+          : ₱${rate} × ${multiplier} court(s) = ₱${amount}<br>
         `;
       } else {
         amount = rate;
