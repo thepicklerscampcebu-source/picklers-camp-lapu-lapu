@@ -500,11 +500,77 @@
     alert("You may now close this tab.");
   }
 
+
+
+  function loadBookingFromURL() {
+
+    const params =
+      new URLSearchParams(window.location.search);
+  
+    const court =
+      params.get("court");
+  
+    const date =
+      params.get("date");
+  
+    const timeIn =
+      params.get("timeIn");
+  
+    const duration =
+      params.get("duration");
+  
+  
+    if(court){
+  
+      document.getElementById("court").value =
+        court;
+  
+    }
+  
+    if(date){
+  
+      document.getElementById("date").value =
+        date;
+  
+    }
+  
+  
+    // regenerate time options
+    updateTimeInOptions();
+  
+  
+    if(timeIn){
+  
+      document.getElementById("timeIn").value =
+        timeIn;
+  
+    }
+  
+  
+    // regenerate duration list
+    updateDuration();
+  
+  
+    if(duration){
+  
+      document.getElementById("duration").value =
+        duration;
+  
+    }
+  
+  
+    computeTotal();
+  
+    updateBreakdownButton();
+  
+  }
+
   // Init
   window.onload = function () {
     setMinDate();
     updateTimeInOptions();
     updateBreakdownButton();
+    loadBookingFromURL();
   
     const emailInput = document.getElementById("email");
     const confirmEmailInput = document.getElementById("confirmEmail");
