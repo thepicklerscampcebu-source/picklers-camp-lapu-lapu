@@ -511,7 +511,11 @@
 
 
   function goBackToSchedule() {
-    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/";
+    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/"
+    + "?date=" + encodeURIComponent(bookingDate)
+    + "&court=" + encodeURIComponent(bookingCourt)
+    + "&timeIn=" + bookingTimeIn
+    + "&duration=" + bookingDuration;
   }
 
 
