@@ -43,12 +43,40 @@
       max-width: 400px;
       text-align: center;
     }
+
+    input[readonly],
+    select:disabled {
+    
+      background-color: #f0f0f0;
+      color: #666;
+      opacity: 1;
+      cursor: default;
+    
+    }
+    
   </style>
 </head>
 <body>
 
 <!-- ================= FORM ================= -->
 <div id="formPage" class="card">
+
+  <button
+  type="button"
+  onclick="goBackToSchedule()"
+  style="
+    width:auto;
+    background:#40b55c;
+    color:white;
+    border:none;
+    border-radius:5px;
+    padding:8px 12px;
+    margin-bottom:15px;
+    align-self:flex-start;
+  ">
+  ← Back to Time Slot Selection
+</button>
+  
   <h2>The Picklers Camp Lapu-Lapu - Booking Form</h2>
 
   <input type="email" id="email" placeholder="Email" required>
@@ -478,7 +506,12 @@
     btn.disabled = true;
     btn.innerText = "Redirecting...";
     // CHANGE window.location.href link DURING TESTING!!!!
-    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu/test.html"; // CHANGE window.location.href link DURING TESTING!!!!
+    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/"; // CHANGE window.location.href link DURING TESTING!!!!
+  }
+
+
+  function goBackToSchedule() {
+    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/";
   }
 
 
