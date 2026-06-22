@@ -511,11 +511,25 @@
 
 
   function goBackToSchedule() {
-    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/"
-    + "?date=" + encodeURIComponent(bookingDate)
-    + "&court=" + encodeURIComponent(bookingCourt)
-    + "&timeIn=" + bookingTimeIn
-    + "&duration=" + bookingDuration;
+  
+    const email = document.getElementById("email").value;
+    const confirmEmail = document.getElementById("confirmEmail").value;
+    const name = document.getElementById("name").value;
+    const contact = document.getElementById("contact").value;
+    const address = document.getElementById("address").value;
+  
+    window.location.href =
+      "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/"
+      + "?date=" + encodeURIComponent(bookingDate)
+      + "&court=" + encodeURIComponent(bookingCourt)
+      + "&timeIn=" + bookingTimeIn
+      + "&duration=" + bookingDuration
+      + "&email=" + encodeURIComponent(email)
+      + "&confirmEmail=" + encodeURIComponent(confirmEmail)
+      + "&name=" + encodeURIComponent(name)
+      + "&contact=" + encodeURIComponent(contact)
+      + "&address=" + encodeURIComponent(address);
+  
   }
 
 
@@ -524,6 +538,13 @@
   let bookingDate;
   let bookingTimeIn;
   let bookingDuration;
+  
+  // customer info
+  let bookingEmail = "";
+  let bookingConfirmEmail = "";
+  let bookingName = "";
+  let bookingContact = "";
+  let bookingAddress = "";
 
   function loadBookingFromURL() {
   
@@ -533,6 +554,12 @@
     const date = params.get("date");
     const timeIn = params.get("timeIn");
     const duration = params.get("duration");
+
+    bookingEmail = decodeURIComponent(params.get("email") || "");
+    bookingConfirmEmail = decodeURIComponent(params.get("confirmEmail") || "");
+    bookingName = decodeURIComponent(params.get("name") || "");
+    bookingContact = decodeURIComponent(params.get("contact") || "");
+    bookingAddress = decodeURIComponent(params.get("address") || "");
   
     bookingCourt = court;
     bookingDate = date;
@@ -546,14 +573,18 @@
     if (date) {
       document.getElementById("date").value = date;
     }
+
+    document.getElementById("email").value = bookingEmail;
+    document.getElementById("confirmEmail").value = bookingConfirmEmail;
+    document.getElementById("name").value = bookingName;
+    document.getElementById("contact").value = bookingContact;
+    document.getElementById("address").value = bookingAddress;
   
     const endTime = calculateTimeOut(Number(timeIn), Number(duration));
   
-    document.getElementById("timeSlot").value =
-      formatTime(Number(timeIn)) + " - " + endTime;
+    document.getElementById("timeSlot").value = formatTime(Number(timeIn)) + " - " + endTime;
   
-    document.getElementById("durationDisplay").value =
-      duration + (duration == 1 ? " hour" : " hours");
+    document.getElementById("durationDisplay").value = duration + (duration == 1 ? " hour" : " hours");
   
     computeTotal();
 
