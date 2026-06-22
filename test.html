@@ -5,68 +5,64 @@
   <style>
 
     .step-indicator{
-
       display:flex;
       align-items:center;
       justify-content:center;
-    
       margin-bottom:20px;
-    
     }
     
     .step{
-    
       display:flex;
       flex-direction:column;
       align-items:center;
-    
     }
     
     .circle{
-    
       width:40px;
       height:40px;
-    
       border-radius:50%;
-    
       background:#ddd;
-    
       color:white;
-    
       display:flex;
       align-items:center;
       justify-content:center;
-    
       font-weight:bold;
-    
     }
     
     .step.active .circle{
-    
       background:#40b55c;
-    
     }
     
     .label{
-    
       margin-top:8px;
-    
       font-size:12px;
-    
     }
     
     .line{
-    
       width:80px;
       height:2px;
-    
       background:#ddd;
-    
       margin:0 10px;
-    
     }
+
+    .slot-card{
+    border:1px solid #ccc;
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:10px;
+    background:#f8f8f8;
+  }
+  
+  .slot-court{
+    font-weight:bold;
+    color:#40b55c;
+  }
+
+  .slot-time{
+    margin-top:5px;
+  }
     
-      * { box-sizing: border-box; }
+    * { box-sizing: border-box; }
     body { font-family: Arial; max-width: 500px; margin: auto; padding: 10px; }
     input, select, button { width: 100%; padding: 8px; margin: 6px 0; }
     .hidden { display: none !important; }
@@ -171,26 +167,12 @@
   <p id="formWarning" style= "color:red; margin-top:10px; font-size:14px;"></p>
   <input type="text" id="address" placeholder="Address (optional)">
 
-  <label for="court">Court</label>
-  <select id="court" disabled>
-    <option value="">Select Court</option>
-    <option value="Court 1">Court 1</option>
-    <option value="Court 2">Court 2</option>
-    <option value="Court 3">Court 3</option>
-    <option value="Court 1 and Court 2">Court 1 and Court 2</option>
-    <option value="Court 2 and Court 3">Court 2 and Court 3</option>
-    <option value="Court 1 and Court 3">Court 1 and Court 3</option>
-    <option value="Court 1, Court 2, and Court 3">Court 1, Court 2, and Court 3</option>
-  </select>
-
   <label for="date">Date</label>
   <input type="text" id="date" readonly>
 
-  <label>Time Slot</label>
-  <input type="text" id="timeSlot" readonly>
-
-  <label for="duration">Duration of stay</label>
-  <input type="text" id="durationDisplay" readonly>
+  <label>Selected Slots</label>
+  
+  <div id="slotContainer"></div>
 
   <!-- 
   <button type="button" onclick="checkAvailability(event)" 
