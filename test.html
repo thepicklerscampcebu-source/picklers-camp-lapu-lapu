@@ -3,6 +3,69 @@
 <head>
   <base target="_top">
   <style>
+
+    .step-indicator{
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    
+      margin-bottom:20px;
+    
+    }
+    
+    .step{
+    
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    
+    }
+    
+    .circle{
+    
+      width:40px;
+      height:40px;
+    
+      border-radius:50%;
+    
+      background:#ddd;
+    
+      color:white;
+    
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    
+      font-weight:bold;
+    
+    }
+    
+    .step.active .circle{
+    
+      background:#40b55c;
+    
+    }
+    
+    .label{
+    
+      margin-top:8px;
+    
+      font-size:12px;
+    
+    }
+    
+    .line{
+    
+      width:80px;
+      height:2px;
+    
+      background:#ddd;
+    
+      margin:0 10px;
+    
+    }
+    
       * { box-sizing: border-box; }
     body { font-family: Arial; max-width: 500px; margin: auto; padding: 10px; }
     input, select, button { width: 100%; padding: 8px; margin: 6px 0; }
@@ -57,6 +120,31 @@
   </style>
 </head>
 <body>
+
+<body>
+
+<div class="step-indicator">
+
+  <div class="step active" id="step1">
+    <div class="circle">1</div>
+    <div class="label">Booking Info</div>
+  </div>
+
+  <div class="line"></div>
+
+  <div class="step" id="step2">
+    <div class="circle">2</div>
+    <div class="label">Payment</div>
+  </div>
+
+  <div class="line"></div>
+
+  <div class="step" id="step3">
+    <div class="circle">3</div>
+    <div class="label">Proof Upload</div>
+  </div>
+
+</div>
 
 <!-- ================= FORM ================= -->
 <div id="formPage" class="card">
@@ -208,6 +296,21 @@
   function isValidEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
+  }
+
+
+  function setStep(stepNumber){
+
+    document
+      .querySelectorAll(".step")
+      .forEach(step =>
+        step.classList.remove("active")
+      );
+  
+    document
+      .getElementById("step" + stepNumber)
+      .classList.add("active");
+  
   }
   
 
@@ -372,6 +475,8 @@
         return;
       }
     
+      setStep(2);
+      
       document.getElementById("formPage").classList.add("hidden");
       document.getElementById("summaryPage").classList.remove("hidden");
     })
@@ -774,8 +879,17 @@
 
 
   function editBooking() {
-    document.getElementById("summaryPage").classList.add("hidden");
-    document.getElementById("formPage").classList.remove("hidden");
+  
+    setStep(1);
+  
+    document
+      .getElementById("summaryPage")
+      .classList.add("hidden");
+  
+    document
+      .getElementById("formPage")
+      .classList.remove("hidden");
+  
   }
 
 
