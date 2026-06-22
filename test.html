@@ -309,54 +309,7 @@
   
     return hour + ":00 " + suffix;
   }
-  
 
-  // Compute total
-  function computeTotal() {
-  
-    if (
-        !bookingCourt ||
-        isNaN(bookingTimeIn) ||
-        !bookingDuration
-    ) {
-        document.getElementById("total").innerText = 0;
-        return;
-    }
-  
-    let total = 0;
-  
-    for (let i = 0; i < bookingDuration; i++) {
-        let hour = (bookingTimeIn + i) % 24;
-        total += getRate(hour);
-    }
-  
-    total *= getCourtMultiplier();
-  
-    document.getElementById("total").innerText = total;
-  }
-
-  
-  function getCourtMultiplier() {
-    const court = bookingCourt;
-  
-    switch (court) {
-      case "Court 1":
-      case "Court 2":
-      case "Court 3":
-        return 1;
-  
-      case "Court 1 and Court 2":
-      case "Court 2 and Court 3":
-      case "Court 1 and Court 3":
-        return 2;
-  
-      case "Court 1, Court 2, and Court 3":
-        return 3;
-  
-      default:
-        return 1;
-    }
-  }
 
   // Go to summary
   function goToSummary() {
@@ -403,26 +356,22 @@
       return;
     }
 
-    if (!data.court) {
-      document.getElementById("formWarning").innerText = "Please select court.";
-      btn.disabled = false;
-      btn.innerText = "Proceed to Payment";
-      return;
-    }
-
     if (!data.date) {
       document.getElementById("formWarning").innerText = "Please select your preferred date.";
       btn.disabled = false;
       btn.innerText = "Proceed to Payment";
       return;
     }
-
-    if (isNaN(data.timeIn) || !data.duration) {
-        document.getElementById("formWarning").innerText = "Please select a time slot.";
     
-        btn.disabled = false;
-        btn.innerText = "Proceed to Payment";
-        return;
+    if (bookingSlots.length === 0) {
+    
+      document.getElementById("formWarning").innerText = "Please select a time slot.";
+    
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+    
+      return;
+    
     }
 
     const today = new Date();
@@ -494,19 +443,13 @@
       address:
         document.getElementById("address").value,
   
-      court:
-        bookingCourt,
-  
       date:
         bookingDate,
   
-      timeIn:
-        bookingTimeIn,
+      slots:
+        bookingSlots,
   
-      duration:
-        bookingDuration,
-  
-      total:0
+      total: 0
   
     };
   
@@ -612,9 +555,7 @@
     window.location.href =
       "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/"
       + "?date=" + encodeURIComponent(bookingDate)
-      + "&court=" + encodeURIComponent(bookingCourt)
-      + "&timeIn=" + bookingTimeIn
-      + "&duration=" + bookingDuration
+      + "&slots=" + encodeURIComponent(JSON.stringify(bookingSlots))
       + "&email=" + encodeURIComponent(email)
       + "&confirmEmail=" + encodeURIComponent(confirmEmail)
       + "&name=" + encodeURIComponent(name)
@@ -625,10 +566,8 @@
 
 
 
-  let bookingCourt;
   let bookingDate;
-  let bookingTimeIn;
-  let bookingDuration;
+  let bookingSlots = [];
   
   // customer info
   let bookingEmail = "";
@@ -641,10 +580,8 @@
   
     const params = new URLSearchParams(window.location.search);
   
-    const court = params.get("court");
     const date = params.get("date");
-    const timeIn = params.get("timeIn");
-    const duration = params.get("duration");
+    const slots = JSON.parse(decodeURIComponent(params.get("slots") || "[]"));
 
     bookingEmail = decodeURIComponent(params.get("email") || "");
     bookingConfirmEmail = decodeURIComponent(params.get("confirmEmail") || "");
@@ -652,14 +589,8 @@
     bookingContact = decodeURIComponent(params.get("contact") || "");
     bookingAddress = decodeURIComponent(params.get("address") || "");
   
-    bookingCourt = court;
     bookingDate = date;
-    bookingTimeIn = Number(timeIn);
-    bookingDuration = Number(duration);
-  
-    if (court) {
-      document.getElementById("court").value = court;
-    }
+    bookingSlots = slots;
   
     if (date) {
       document.getElementById("date").value = date;
@@ -670,14 +601,6 @@
     document.getElementById("name").value = bookingName;
     document.getElementById("contact").value = bookingContact;
     document.getElementById("address").value = bookingAddress;
-  
-    const endTime = calculateTimeOut(Number(timeIn), Number(duration));
-  
-    document.getElementById("timeSlot").value = formatTime(Number(timeIn)) + " - " + endTime;
-  
-    document.getElementById("durationDisplay").value = duration + (duration == 1 ? " hour" : " hours");
-  
-    computeTotal();
 
     updateBreakdownButton();
   }
@@ -721,19 +644,18 @@
 
 
 
-  function calculateSummaryTotal(data) {
-    let timeIn = parseInt(data.timeIn);
-    let duration = parseInt(data.duration);
-
+  function calculateSummaryTotal() {
+  
     let total = 0;
-
-    for (let i = 0; i < duration; i++) {
-      let hour = (timeIn + i) % 24;
-      total += getRate(hour);
-    }
-
-    total *= getCourtMultiplier();
+  
+    bookingSlots.forEach(slot => {
+  
+      total += getRate(slot.hour);
+  
+    });
+  
     return total;
+  
   }
 
 
@@ -763,13 +685,12 @@
   
 
   function generateBreakdown() {
-    const court = bookingCourt;
-    const timeIn = bookingTimeIn;
-    const duration = bookingDuration;
     const selectedDate = document.getElementById("date").value;
   
-    if (!court || isNaN(timeIn) || isNaN(duration) || !selectedDate) {
-      return "Please select court, date, time, and duration.";
+    if (bookingSlots.length === 0 || !selectedDate) {
+    
+      return "No slots selected.";
+    
     }
   
     const weekend = isWeekend(selectedDate);
@@ -785,34 +706,14 @@
     let breakdownHTML = header;
     let total = 0;
   
-    const multiplier = getCourtMultiplier();
-  
-    for (let i = 0; i < duration; i++) {
-  
-      let hourStart = (timeIn + i) % 24;
-  
-      let rate = getRate(hourStart);
-  
-      let amount;
-  
-      if (multiplier > 1) {
-        amount = rate * multiplier;
-  
-        breakdownHTML += `
-          ${formatTime(hourStart)} - ${calculateTimeOut(hourStart,1)}
-          : ₱${rate} × ${multiplier} court(s) = ₱${amount}<br>
-        `;
-      } else {
-        amount = rate;
-  
-        breakdownHTML += `
-          ${formatTime(hourStart)} - ${calculateTimeOut(hourStart,1)}
-          : ₱${amount}<br>
-        `;
-      }
-  
-      total += amount;
-    }
+    bookingSlots.forEach(slot => {
+    
+      const rate = getRate(slot.hour);
+    
+      breakdownHTML += `${slot.court}<br>${formatTime(slot.hour)} - ${calculateTimeOut(slot.hour,1)}: ₱${rate}<br><br>`;
+      total += rate;
+    
+    });
   
     breakdownHTML += `<hr><strong>Total: ₱${total}</strong>`;
   
@@ -849,7 +750,7 @@
   
     const btn = document.getElementById("breakdownBtn");
   
-    if (bookingCourt && !isNaN(bookingTimeIn) && bookingDuration) {
+    if (bookingSlots.length > 0) {
     
         btn.disabled = false;
         btn.style.opacity = "1";
