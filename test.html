@@ -174,13 +174,6 @@
   
   <div id="slotContainer"></div>
 
-  <!-- 
-  <button type="button" onclick="checkAvailability(event)" 
-    style="background:#f44336; color:white; border:none; border-radius:5px;">
-    Check Court Availability
-  </button>
-  -->
-
   <div>
     <div id="totalWrapper">
       <strong>
@@ -262,14 +255,6 @@
     <h3 style="color:#40b55c;">Price Breakdown</h3>
     <div id="breakdownContent" style="text-align:left; margin-top:10px;"></div>
     <button onclick="closeBreakdownModal()">Close</button>
-  </div>
-</div>
-
-<div id="availabilityModal" class="modal">
-  <div class="modal-content">
-    <h3 id="availabilityTitle" style="color:#40b55c;"></h3>
-    <p id="availabilityMessage"></p>
-    <button onclick="closeAvailabilityModal()">Close</button>
   </div>
 </div>
 
@@ -385,16 +370,29 @@
       return;
     }
 
-    let timeOutFormatted = calculateTimeOut(data.timeIn, data.duration);
-
-    document.getElementById("summaryText").innerHTML = `
+    let summaryHTML = `
     <div><strong>Name:</strong> ${data.name}</div>
-    <div><strong>Court:</strong> ${data.court}</div>
     <div><strong>Date:</strong> ${data.date}</div>
-    <div><strong>Time Slot:</strong> ${formatTime(data.timeIn)} - ${timeOutFormatted}</div>
-    <div><strong>Duration:</strong> ${data.duration} hour(s)</div>
-    <div><strong>Total:</strong> ₱${calculateSummaryTotal(data)}</div>
+    <br>
+    <div><strong>Selected Slots:</strong></div>
     `;
+    
+    bookingSlots.forEach(slot => {
+    
+      summaryHTML += `
+      <div>
+        ${slot.court} :
+        ${formatTime(slot.hour)}
+        -
+        ${calculateTimeOut(slot.hour, 1)}
+      </div>
+      `;
+    
+    });
+    
+    summaryHTML += `<br><div><strong>Total:</strong> ₱${calculateSummaryTotal()}</div>`;
+    
+    document.getElementById("summaryText").innerHTML = summaryHTML;
 
     fetch(webAppUrl, {
       method: "POST",
@@ -406,7 +404,7 @@
     .then(res => res.json())
     .then(res => {
       if (res.conflict) {
-        document.getElementById("formWarning").innerText = "Conflict detected. The selected court and schedule are no longer available.";
+        document.getElementById("formWarning").innerText = "One or more of your selected slots are no longer available. Please go back and select another schedule.";
         return;
       }
     
@@ -423,7 +421,7 @@
       btn.innerText = "Proceed to Payment";
     });
 
-    document.getElementById("summaryAmount").innerText = calculateSummaryTotal(data);
+    document.getElementById("summaryAmount").innerText = calculateSummaryTotal();
   }
 
   // Collect form data
@@ -452,6 +450,31 @@
       total: 0
   
     };
+  
+  }
+
+
+  function renderSelectedSlots() {
+
+    const container = document.getElementById("slotContainer");
+  
+    container.innerHTML = "";
+  
+    bookingSlots.forEach(slot => {
+  
+      container.innerHTML += `
+        <div class="slot-card">
+          <div class="slot-court">${slot.court}</div>
+  
+          <div class="slot-time">
+            ${formatTime(slot.hour)}
+            -
+            ${calculateTimeOut(slot.hour,1)}
+          </div>
+        </div>
+      `;
+  
+    });
   
   }
 
@@ -591,6 +614,7 @@
   
     bookingDate = date;
     bookingSlots = slots;
+    renderSelectedSlots();
   
     if (date) {
       document.getElementById("date").value = date;
@@ -777,78 +801,6 @@
       .getElementById("formPage")
       .classList.remove("hidden");
   
-  }
-
-
-
-  function checkAvailability(event) {
-
-    document.getElementById("formWarning").innerText = "";
-    
-    const data = getFormData();
-
-    if (!data.court || !data.date || !data.timeIn || !data.duration) {
-    
-      document.getElementById("formWarning").innerText =
-          "Please complete court, date, time slot, and duration.";
-    
-      return;
-    }
-
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerText = "Checking...";
-
-    fetch(webAppUrl, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "checkConflict",
-        ...data
-      })
-    })
-    .then(res => res.json())
-    .then(res => {
-      showAvailabilityResult(res, data.court);
-
-      // ✅ restore button
-      btn.disabled = false;
-      btn.innerText = "Check Court Availability";
-    })
-      
-    .catch(err => {
-    
-      document.getElementById("formWarning").innerText =
-          "Unable to check court availability.";
-    
-      btn.disabled = false;
-      btn.innerText = "Check Court Availability";
-    
-    });
-  }
-
-
-  function showAvailabilityResult(res, court) {
-    const title = document.getElementById("availabilityTitle");
-    const msg = document.getElementById("availabilityMessage");
-
-    if (res.conflict) {
-      title.innerText = "Not Available ❌";
-          msg.innerText =
-      "The following court(s) are already occupied during your selected schedule:\n\n" +
-      res.occupiedCourts.join(", ") +
-      ".\n\nPlease select another court or another time.";
-      
-    } else {
-      title.innerText = "Available ✅";
-      msg.innerText = `${court} is/are AVAILABLE for your selected date and time!`;
-    }
-
-    document.getElementById("availabilityModal").style.display = "block";
-  }
-
-
-  function closeAvailabilityModal() {
-    document.getElementById("availabilityModal").style.display = "none";
   }
 
 
