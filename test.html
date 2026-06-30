@@ -562,17 +562,42 @@
     }
       
     btn.disabled = true;
-    btn.innerText = "Submitting...";
+    btn.innerText = "Checking availability...";
 
     // (optional) force UI repaint before heavy work starts
     setTimeout(() => {
 
-      let reader = new FileReader();
-
+    // Final conflict check before uploading
+    fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "checkConflict",
+        ...data
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+    
+      if (res.conflict) {
+    
+        document.getElementById("summaryWarning").innerText =
+          "Sorry, one or more of your selected slots were just booked by another customer.";
+    
+        btn.disabled = false;
+        btn.innerText = "Submit Booking";
+    
+        return;
+      }
+    
+      btn.innerText = "Submitting...";
+    
+      const reader = new FileReader();
+    
       reader.onload = function(e) {
+    
         data.file = e.target.result;
         data.fileName = file.name;
-
+    
         fetch(webAppUrl, {
           method: "POST",
           body: JSON.stringify({
@@ -582,23 +607,44 @@
         })
         .then(res => res.json())
         .then(res => {
+    
           if (res.error) {
+    
             document.getElementById("summaryWarning").innerText = res.error;
+    
             btn.disabled = false;
             btn.innerText = "Submit Booking";
+    
             return;
           }
-        
+    
           showSuccessPage();
+    
         })
         .catch(err => {
-          document.getElementById("summaryWarning").innerText = "Error submitting booking.";
+    
+          document.getElementById("summaryWarning").innerText =
+            "Error submitting booking.";
+    
           btn.disabled = false;
           btn.innerText = "Submit Booking";
+    
         });
+    
       };
-
+    
       reader.readAsDataURL(file);
+    
+    })
+    .catch(err => {
+    
+      document.getElementById("summaryWarning").innerText =
+        "Unable to verify slot availability.";
+    
+      btn.disabled = false;
+      btn.innerText = "Submit Booking";
+    
+    });
 
     }, 10);
   }
