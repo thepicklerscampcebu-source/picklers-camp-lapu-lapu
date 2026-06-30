@@ -109,6 +109,38 @@
       text-align:center;
     }
 
+
+    .qr-modal{
+      display:none;
+      position:fixed;
+      z-index:9999;
+      left:0;
+      top:0;
+      width:100%;
+      height:100%;
+      background:rgba(0,0,0,.85);
+    }
+    
+    .qr-modal-content{
+      display:block;
+      max-width:90%;
+      max-height:90%;
+      margin:auto;
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+    }
+    
+    .close-btn{
+      position:absolute;
+      top:20px;
+      right:30px;
+      color:white;
+      font-size:40px;
+      cursor:pointer;
+    }
+
     input[readonly],
     select:disabled {
     
@@ -220,11 +252,19 @@
     <div style="flex:1; text-align:center; min-width:200px;">
       <h3 style="color:#40b55c;">Scan to Pay</h3>
       
-      <img src="Images/The Picklers Camp Lapu-Lapu QR Code.jpg" 
-           style="width:200px; border-radius:8px; border:1px solid #ccc;">
+    <img id="qrCode"
+         src="Images/The Picklers Camp Lapu-Lapu QR Code.jpg"
+         style="width:200px; cursor:pointer; border-radius:8px; border:1px solid #ccc;">
+    
+    <div id="qrModal" class="qr-modal">
+      <span class="close-btn">&times;</span>
+      <img class="qr-modal-content"
+           src="Images/The Picklers Camp Lapu-Lapu QR Code.jpg">
+    </div>
       
       <p style="font-size:12px; color:#666;">
-        Scan the QR code and enter the exact amount shown in your booking summary.
+        Scan the QR code and enter the exact amount shown in your booking summary.<br>
+        Click the QR code to enlarge.
       </p>
 
       <div style="margin-top:10px; font-size:14px;">
@@ -271,9 +311,25 @@
 
 
 <script>
-  // CHANGE WebAppUrl DURING TESTING. REVERT BACK WHEN RELEASING TO PROD. PROD LINK : https://script.google.com/macros/s/AKfycby7u5V0psYXDZ4-bMLKmVJm7l4vG4cgBFgFjjqR5ymJ5PFsH2Vzk9LvdLtFYJ31fVLkMA/exec
-  const webAppUrl = "https://script.google.com/macros/s/AKfycbzGreoLN4DfcMPG_8E05DetWeJp29gthoblv9LFSysiCATD-SQHimYAYGLVQCB4nhcwzg/exec"; // CHANGE THIS WHEN TESTING
+  // CHANGE WebAppUrl DURING TESTING. REVERT BACK WHEN RELEASING TO PROD. PROD LINK : https://script.google.com/macros/s/AKfycbwOFukRcUS77GBa_qWqjHy0xetCe_PYC_SUiMIF5rKFUBHdf_p4CyI22YkmHELII52OJw/exec
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbzGreoLN4DfcMPG_8E05DetWeJp29gthoblv9LFSysiCATD-SQHimYAYGLVQCB4nhcwzg/exec"; // CHANGE THIS WHEN TESTING : https://script.google.com/macros/s/AKfycbzGreoLN4DfcMPG_8E05DetWeJp29gthoblv9LFSysiCATD-SQHimYAYGLVQCB4nhcwzg/exec
   const operatingHours = [7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1];
+
+  const qrCode = document.getElementById("qrCode");
+  const qrModal = document.getElementById("qrModal");
+  const closeBtn = document.querySelector(".close-btn");
+  
+  qrCode.onclick = () => {
+    qrModal.style.display = "block";
+  };
+  
+  closeBtn.onclick = () => {
+    qrModal.style.display = "none";
+  };
+  
+  qrModal.onclick = () => {
+    qrModal.style.display = "none";
+  };
 
   function isValidEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -573,8 +629,8 @@
     const btn = event.target;
     btn.disabled = true;
     btn.innerText = "Redirecting...";
-    // CHANGE window.location.href link DURING TESTING!!!!
-    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/"; // CHANGE window.location.href link DURING TESTING!!!!
+    // CHANGE window.location.href link DURING TESTING!!!! : PROD LINK - https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/
+    window.location.href = "https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/test.html"; // CHANGE window.location.href link DURING TESTING!!!! TEST LINK - https://thepicklerscampcebu-source.github.io/picklers-camp-lapu-lapu-availability-system/test.html
   }
 
 
