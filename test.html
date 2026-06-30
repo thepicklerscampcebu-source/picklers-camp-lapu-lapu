@@ -427,13 +427,23 @@
     }
 
     const today = new Date();
-    const selected = new Date(data.date);
+    const parts = data.date.split("-");
+
+    const selected = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+    );
     
     today.setHours(0,0,0,0);
     selected.setHours(0,0,0,0);
     
     if (selected < today) {
       document.getElementById("formWarning").innerText = "You cannot select a past date.";
+      
+      btn.disabled = false;
+      btn.innerText = "Proceed to Payment";
+
       return;
     }
 
@@ -630,6 +640,16 @@
           btn.innerText = "Submit Booking";
     
         });
+
+        reader.onerror = function() {
+
+          document.getElementById("summaryWarning").innerText =
+              "Unable to read the uploaded file.";
+      
+          btn.disabled = false;
+          btn.innerText = "Submit Booking";
+      
+        };
     
       };
     
@@ -797,9 +817,19 @@
 
 
   function isWeekend(dateString) {
-    const date = new Date(dateString);
-    const day = date.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
-    return day === 0 || day == 5 || day === 6;
+  
+      const parts = dateString.split("-");
+  
+      const date = new Date(
+          Number(parts[0]),
+          Number(parts[1]) - 1,
+          Number(parts[2])
+      );
+  
+      const day = date.getDay();
+  
+      return day === 0 || day === 5 || day === 6;
+  
   }
 
 
