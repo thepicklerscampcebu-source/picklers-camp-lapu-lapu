@@ -875,14 +875,14 @@
     
     }
   
-    const weekend = isWeekend(selectedDate);
-  
-    let header = weekend
+    const hasWeekendRate = bookingSlots.some(slot => getRate(slot.hour) === 500);
+    
+    let header = hasWeekendRate
       ? `<div style="margin-bottom:10px; color:#40b55c;">
-           <strong>Your selected date is a WEEKEND.<br>Weekend rates will apply.</strong>
+           <strong>Weekend rates apply to your selected booking.</strong>
          </div>`
       : `<div style="margin-bottom:10px; color:#40b55c;">
-           <strong>Your selected date is a WEEKDAY.<br>Weekday rates will apply.</strong>
+           <strong>Weekday rates apply to your selected booking.</strong>
          </div>`;
   
     let breakdownHTML = header;
