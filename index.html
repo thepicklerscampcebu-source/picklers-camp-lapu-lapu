@@ -817,38 +817,50 @@
   }
 
 
-  function isWeekend(dateString) {
-  
-      const parts = dateString.split("-");
-  
-      const date = new Date(
-          Number(parts[0]),
-          Number(parts[1]) - 1,
-          Number(parts[2])
-      );
-  
-      const day = date.getDay();
-  
-      return day === 0 || day === 5 || day === 6;
-  
+  function isWeekend(dateString, hour) {
+
+    const parts = dateString.split("-");
+
+    const date = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+    );
+
+    const day = date.getDay();
+
+    // Friday, Saturday, Sunday
+    if (day === 5 || day === 6 || day === 0) {
+        return true;
+    }
+
+    // Monday 12AM–2AM still belongs to Sunday
+    if (day === 1 && hour <= 2) {
+        return true;
+    }
+
+    return false;
+
   }
-
-
+  
+  
   function getRate(hour) {
+  
     const selectedDate = document.getElementById("date").value;
   
     if (!selectedDate) return 0;
   
-    const weekend = isWeekend(selectedDate);
+    const weekend = isWeekend(selectedDate, hour);
   
     // High rate applies from 3 PM (15) until 2 AM (2)
     const highRate = (hour >= 15 || hour <= 2);
   
     if (weekend) {
-      return 500;
+        return 500;
     }
   
     return highRate ? 490 : 450;
+  
   }
   
 
