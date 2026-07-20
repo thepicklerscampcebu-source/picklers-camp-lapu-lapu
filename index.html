@@ -875,24 +875,77 @@
     
     }
   
-    const hasWeekendRate = bookingSlots.some(slot => getRate(slot.hour) === 500);
+    const hasWeekendRate = bookingSlots.some(slot =>
+      isWeekend(selectedDate, slot.hour)
+    );
     
-    let header = hasWeekendRate
-      ? `<div style="margin-bottom:10px; color:#40b55c;">
-           <strong>Weekend rates apply to your selected booking.</strong>
-         </div>`
-      : `<div style="margin-bottom:10px; color:#40b55c;">
-           <strong>Weekday rates apply to your selected booking.</strong>
-         </div>`;
+    const hasWeekdayRate = bookingSlots.some(slot =>
+      !isWeekend(selectedDate, slot.hour)
+    );
+
+    const mixedRates = hasWeekendRate && hasWeekdayRate;
+    
+    let header = "";
+    
+    if (hasWeekendRate && hasWeekdayRate) {
+    
+      header = `
+        <div style="margin-bottom:10px; color:#40b55c;">
+          <strong>
+            Your selected booking includes both WEEKDAY and WEEKEND rates.<br>
+            Each slot is charged according to its applicable rate.
+          </strong>
+        </div>
+      `;
+    
+    }
+    else if (hasWeekendRate) {
+    
+      header = `
+        <div style="margin-bottom:10px; color:#40b55c;">
+          <strong>
+            Your selected booking uses WEEKEND rates.
+          </strong>
+        </div>
+      `;
+    
+    }
+    else {
+    
+      header = `
+        <div style="margin-bottom:10px; color:#40b55c;">
+          <strong>
+            Your selected booking uses WEEKDAY rates.
+          </strong>
+        </div>
+      `;
+    
+    }
   
     let breakdownHTML = header;
     let total = 0;
   
     bookingSlots.forEach(slot => {
     
+      const weekendRate = isWeekend(selectedDate, slot.hour);
       const rate = getRate(slot.hour);
     
-      breakdownHTML += `${slot.court}<br>${formatTime(slot.hour)} - ${calculateTimeOut(slot.hour,1)}: ₱${rate}<br><br>`;
+      let rateLabel = "";
+    
+      if (mixedRates) {
+    
+        rateLabel = weekendRate
+          ? " (Weekend)"
+          : " (Weekday)";
+    
+      }
+    
+      breakdownHTML += `
+        ${slot.court}<br>
+        ${formatTime(slot.hour)} - ${calculateTimeOut(slot.hour,1)}
+        ${rateLabel}: ₱${rate}<br><br>
+      `;
+    
       total += rate;
     
     });
