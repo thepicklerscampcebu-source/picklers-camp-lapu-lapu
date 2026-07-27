@@ -959,24 +959,59 @@
     return false;
 
   }
+
+
+  function getPricingTable(selectedDate) {
+
+    const bookingDate = new Date(selectedDate);
+  
+    // Rate increase effective August 1, 2026
+    const rateChangeDate = new Date("2026-08-01");
+  
+    if (bookingDate >= rateChangeDate) {
+  
+      return {
+  
+        weekdayLow: 480,     // 7AM - 3PM
+        weekdayHigh: 500,    // 3PM - 2AM
+        weekend: 500
+  
+      };
+  
+    }
+  
+    // Current rates
+  
+    return {
+  
+      weekdayLow: 450,
+      weekdayHigh: 490,
+      weekend: 500
+  
+    };
+  
+  }
   
   
   function getRate(hour) {
-  
+
     const selectedDate = document.getElementById("date").value;
   
     if (!selectedDate) return 0;
   
+    const rates = getPricingTable(selectedDate);
+  
     const weekend = isWeekend(selectedDate, hour);
   
-    // High rate applies from 3 PM (15) until 2 AM (2)
     const highRate = (hour >= 15 || hour <= 2);
   
     if (weekend) {
-        return 500;
+      return rates.weekend;
     }
   
-    return highRate ? 490 : 450;
+    return highRate
+        ? rates.weekdayHigh
+        : rates.weekdayLow;
   
   }
   
