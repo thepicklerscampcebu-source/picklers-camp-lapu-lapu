@@ -462,7 +462,7 @@
         payment.details +
         "<br><br>" +
         "<strong>Amount to Pay:</strong> ₱" +
-        document.getElementById("summaryAmount").innerText;
+        calculateSummaryTotal();
 
   }
 
@@ -614,7 +614,6 @@
       btn.innerText = "Proceed to Payment";
     });
 
-    document.getElementById("summaryAmount").innerText = calculateSummaryTotal();
   }
 
   // Collect form data
